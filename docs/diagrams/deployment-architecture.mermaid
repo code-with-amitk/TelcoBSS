@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph Kubernetes/Docker
+        OB[onboarding-service]
+        OR[order-service]
+        BI[billing-service]
+        RE[rating-engine]
+        CB[Couchbase]
+        MY[MySQL]
+        KZ[Kafka / Zookeeper]
+        PR[Prometheus]
+        GF[Grafana]
+        KB[Kibana]
+    end
+
+    OB --> CB
+    OR --> CB
+    BI --> MY
+    OB --> KZ
+    OR --> KZ
+    RE --> KZ
+    BI --> KZ
+    PR --> OB
+    PR --> OR
+    PR --> BI
+    PR --> RE
+    GF --> PR
+    KB --> OB
+    KB --> OR
+    KB --> BI
+    KB --> RE

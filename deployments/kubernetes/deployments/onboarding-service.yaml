@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onboarding-service
+  namespace: telcobss
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onboarding-service
+  template:
+    metadata:
+      labels:
+        app: onboarding-service
+    spec:
+      containers:
+        - name: onboarding-service
+          image: telcobss/onboarding-service:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: COUCHBASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: telcobss-config
+                  key: COUCHBASE_URL
+            - name: COUCHBASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: telcobss-config
+                  key: COUCHBASE_USER
+            - name: COUCHBASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: telcobss-secrets
+                  key: COUCHBASE_PASSWORD
+            - name: KAFKA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: telcobss-config
+                  key: KAFKA_BROKERS

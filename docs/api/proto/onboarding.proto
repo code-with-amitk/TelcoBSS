@@ -1,0 +1,22 @@
+syntax = "proto3";
+package api.onboarding;
+
+option go_package = "telcobss/pkg/api/onboarding";
+
+message CreateCustomerRequest {
+  string customer_id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+}
+
+message Customer {
+  string customer_id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+}
+
+service OnboardingService {
+  rpc CreateCustomer(CreateCustomerRequest) returns (Customer);
+}

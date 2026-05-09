@@ -1,0 +1,7 @@
+flowchart LR
+    U[Usage Producer] -->|usage_events| K[(Kafka)]
+    K -->|consume| R[rating-engine (C++)]
+    R -->|rated_events| K
+    K -->|consume| B[billing-service]
+    B -->|Create invoice| M[(MySQL: invoices)]
+    B -->|Store metadata| C[(Couchbase: usage_records)]

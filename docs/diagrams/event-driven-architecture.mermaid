@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph Kafka Topics
+        CE[customer_events]
+        OE[order_events]
+        UE[usage_events]
+        RE[rated_events]
+        DLQ[dead_letter_queue]
+    end
+
+    onboarding-service --> CE
+    order-service --> OE
+    usage-producer --> UE
+    rating-engine --> RE
+    billing-service --> RE
+    any-service --> DLQ

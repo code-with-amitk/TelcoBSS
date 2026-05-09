@@ -1,0 +1,82 @@
+openapi: 3.0.3
+info:
+  title: TelcoBSS API
+  version: 0.1.0
+paths:
+  /v1/customers:
+    post:
+      summary: Create a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+      responses:
+        '202':
+          description: Customer onboarded
+  /v1/orders:
+    post:
+      summary: Place a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Order placed
+  /v1/invoices/{id}:
+    get:
+      summary: Get invoice by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+components:
+  schemas:
+    Customer:
+      type: object
+      properties:
+        customer_id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+      required: [customer_id, name, email]
+    OrderRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+        customer_id:
+          type: string
+        product_code:
+          type: string
+        quantity:
+          type: integer
+      required: [order_id, customer_id, product_code]
+    Invoice:
+      type: object
+      properties:
+        invoice_id:
+          type: string
+        customer_id:
+          type: string
+        total_cents:
+          type: integer
+        status:
+          type: string

@@ -1,0 +1,19 @@
+syntax = "proto3";
+package api.billing;
+
+option go_package = "telcobss/pkg/api/billing";
+
+message GetInvoiceRequest {
+  string invoice_id = 1;
+}
+
+message Invoice {
+  string invoice_id = 1;
+  string customer_id = 2;
+  int64 total_cents = 3;
+  string status = 4;
+}
+
+service BillingService {
+  rpc GetInvoice(GetInvoiceRequest) returns (Invoice);
+}

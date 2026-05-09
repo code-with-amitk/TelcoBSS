@@ -1,0 +1,22 @@
+syntax = "proto3";
+package api.order;
+
+option go_package = "telcobss/pkg/api/order";
+
+message CreateOrderRequest {
+  string order_id = 1;
+  string customer_id = 2;
+  string product_code = 3;
+  int32 quantity = 4;
+}
+
+message Order {
+  string order_id = 1;
+  string customer_id = 2;
+  string product_code = 3;
+  int32 quantity = 4;
+}
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (Order);
+}

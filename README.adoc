@@ -1,0 +1,144 @@
+= TelcoBSS
+:toc:
+:toclevels: 3
+:sectnums:
+
+== Overview
+
+TelcoBSS is a monorepo scaffolding for a telco Business Support System platform. It demonstrates a modular architecture with Go microservices, a C++ rating engine, Kafka eventing, Couchbase and MySQL persistence, and observability via Prometheus/Grafana and Kibana.
+
+The architecture is intentionally designed for local development and progressive implementation with working skeleton code for:
+
+- customer onboarding
+- order management
+- billing and invoice generation
+- rating of usage events
+
+== Architecture
+
+The platform is composed of Go services and a C++ rating engine.
+
+* Onboarding-service: receives new customer registrations, stores customer profiles in Couchbase, and emits `CustomerOnboarded` events.
+* Order-service: accepts plan subscriptions, validates orders, writes order details to MySQL and Couchbase, and emits `OrderPlaced` events.
+* Billing-service: retrieves invoices, stores billing transactions in MySQL, and consumes rated events for invoice generation.
+* Rating-engine (C++): consumes raw usage events from Kafka, applies rating logic, and produces rated usage events.
+
+link:docs/diagrams/deployment-architecture.mermaid[Deployment Architecture]
+link:docs/diagrams/event-driven-architecture.mermaid[Event Driven Architecture]
+
+== Services and Responsibilities
+
+=== onboarding-service
+
+Handles customer registration via REST and internal gRPC, stores customer documents in Couchbase, and sends events to Kafka.
+
+=== order-service
+
+Processes subscription orders, validates inventory with a circuit breaker, persists state in MySQL and Couchbase, and emits order events for downstream provisioning.
+
+=== billing-service
+
+Provides invoice query endpoints and consumes rated usage events. Billing records are stored in MySQL while invoice search metadata may be mirrored to Couchbase.
+
+=== rating-engine
+
+A C++ service that consumes Kafka usage events, applies a simple per-byte rating algorithm, and emits rated usage events for billing.
+
+== Component Linkage
+
+When a customer is onboarded, `onboarding-service` writes to Couchbase collection `customers` and emits a `CustomerOnboarded` event to Kafka topic `customer_events`. The `billing-service` consumes that event and initializes a billing account in MySQL.
+
+When an order is placed, `order-service` validates the request, stores the order in MySQL `order_items` and Couchbase `orders`, and produces `OrderPlaced` on topic `order_events`. A provisioning simulation can be triggered by any downstream consumer.
+
+Usage events flow into Kafka topic `usage_events`. The C++ `rating-engine` consumes those events, calculates a rated amount, and publishes `rated_events`. The `billing-service` consumes `rated_events` and creates invoice records in MySQL.
+
+Prometheus scrapes Go and C++ metrics endpoints, Grafana visualizes dashboards, and Kibana indexes logs from containers.
+
+== Prerequisites
+
+* Go 1.21+
+* C++17 toolchain
+* CMake 3.20+
+* Docker and Docker Compose
+* Couchbase 7.x
+* MySQL 8.x
+* Kafka / Zookeeper (provided via Docker Compose)
+* Prometheus, Grafana, Kibana (provided via Docker Compose)
+
+== Local Setup with Docker Compose
+
+=== Start infrastructure
+
+.CC
+$ cd TelcoBSS/deployments/docker-compose
+$ docker compose up -d
+.CC
+
+=== Initialize databases
+
+.CC
+$ ./scripts/setup-couchbase.sh
+$ ./scripts/setup-mysql.sh
+.CC
+
+=== Generate protobuf stubs
+
+.CC
+$ ./scripts/generate-proto.sh
+.CC
+
+=== Run services locally
+
+The Go services are under `cmd/*`. Start each one via `go run`:
+
+.CC
+$ go run ./cmd/onboarding-service
+$ go run ./cmd/order-service
+$ go run ./cmd/billing-service
+.CC
+
+The C++ rating engine builds from `cmd/rating-engine`:
+
+.CC
+$ cmake -S cmd/rating-engine -B cmd/rating-engine/build
+$ cmake --build cmd/rating-engine/build
+$ ./cmd/rating-engine/build/rating-engine
+.CC
+
+== Running Integration Tests
+
+Run the Go test suite once services and infrastructure are available:
+
+.CC
+$ go test ./...
+.CC
+
+Integration tests can be placed in `test/integration/` and simulated load tests in `test/load/`.
+
+== Generating gRPC Stubs
+
+Run the stub generator script:
+
+.CC
+$ ./scripts/generate-proto.sh
+.CC
+
+This generates Go code into `pkg/api/` using `protoc`.
+
+== Contribution Guidelines
+
+* Use the PR checklist in `.github/pull_request_template.md`.
+* Add unit and integration tests for new behavior.
+* Update API docs in `docs/api/` and Mermaid diagrams when flows change.
+* Keep Go code idiomatic and use `gofmt`.
+* Document database schema changes in `docs/database/`.
+
+== Quick Start Demo
+
+Run the demo script after services are available:
+
+.CC
+$ ./scripts/demo.sh
+.CC
+
+The demo script exercises customer onboarding, order creation, event injection, and invoice retrieval.

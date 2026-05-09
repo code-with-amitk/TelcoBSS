@@ -1,0 +1,8 @@
+flowchart LR
+    subgraph Onboarding
+        A[Customer Portal] -->|POST /v1/customers| B[onboarding-service]
+        B -->|Couchbase Upsert| C[(Couchbase: customers)]
+        B -->|Produce CustomerOnboarded| D[(Kafka: customer_events)]
+        D -->|Consumed by| E[billing-service]
+    end
+    E -->|Initialize billing account| F[(MySQL: invoices)]

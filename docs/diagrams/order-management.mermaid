@@ -1,0 +1,7 @@
+flowchart TD
+    A[Customer Portal] -->|POST /v1/orders| B[order-service]
+    B -->|Validate order + inventory check| C[order-service logic]
+    C -->|Insert into MySQL| D[(MySQL: order_items)]
+    C -->|Upsert into Couchbase| E[(Couchbase: orders)]
+    C -->|Produce OrderPlaced| F[(Kafka: order_events)]
+    F -->|Downstream provisioning| G[Provisioning Simulation]

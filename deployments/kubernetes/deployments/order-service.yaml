@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: telcobss
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: telcobss/order-service:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: COUCHBASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: telcobss-config
+                  key: COUCHBASE_URL
+            - name: COUCHBASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: telcobss-config
+                  key: COUCHBASE_USER
+            - name: COUCHBASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: telcobss-secrets
+                  key: COUCHBASE_PASSWORD
+            - name: MYSQL_DSN
+              valueFrom:
+                configMapKeyRef:
+                  name: telcobss-config
+                  key: MYSQL_DSN
+            - name: KAFKA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: telcobss-config
+                  key: KAFKA_BROKERS

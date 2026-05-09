@@ -1,0 +1,162 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - 2181:2181
+    networks:
+      - telco-net
+
+  kafka:
+    image: bitnami/kafka:3.5
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    networks:
+      - telco-net
+
+  couchbase:
+    image: couchbase/server:community-7.2.0
+    environment:
+      - COUCHBASE_ADMINISTRATOR_USERNAME=Administrator
+      - COUCHBASE_ADMINISTRATOR_PASSWORD=password
+      - COUCHBASE_BUCKET=telco_bss
+    ports:
+      - 8091:8091
+      - 11210:11210
+    networks:
+      - telco-net
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=telco_bss
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - telco-net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - http.host=0.0.0.0
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+    networks:
+      - telco-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - telco-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - 9090:9090
+    networks:
+      - telco-net
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    networks:
+      - telco-net
+
+  onboarding-service:
+    build:
+      context: ../../
+      dockerfile: cmd/onboarding-service/Dockerfile
+    environment:
+      - COUCHBASE_URL=couchbase://couchbase
+      - COUCHBASE_USER=Administrator
+      - COUCHBASE_PASSWORD=password
+      - KAFKA_BROKERS=kafka:9092
+    depends_on:
+      - couchbase
+      - kafka
+    ports:
+      - 8081:8081
+    networks:
+      - telco-net
+
+  order-service:
+    build:
+      context: ../../
+      dockerfile: cmd/order-service/Dockerfile
+    environment:
+      - COUCHBASE_URL=couchbase://couchbase
+      - COUCHBASE_USER=Administrator
+      - COUCHBASE_PASSWORD=password
+      - MYSQL_DSN=root:password@tcp(mysql:3306)/telco_bss
+      - KAFKA_BROKERS=kafka:9092
+    depends_on:
+      - couchbase
+      - mysql
+      - kafka
+    ports:
+      - 8082:8082
+    networks:
+      - telco-net
+
+  billing-service:
+    build:
+      context: ../../
+      dockerfile: cmd/billing-service/Dockerfile
+    environment:
+      - MYSQL_DSN=root:password@tcp(mysql:3306)/telco_bss
+      - KAFKA_BROKERS=kafka:9092
+    depends_on:
+      - mysql
+      - kafka
+    ports:
+      - 8083:8083
+    networks:
+      - telco-net
+
+  rating-engine:
+    build:
+      context: ../../cmd/rating-engine
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - USAGE_TOPIC=usage_events
+      - RATED_TOPIC=rated_events
+    depends_on:
+      - kafka
+    networks:
+      - telco-net
+
+volumes:
+  mysql_data:
+
+networks:
+  telco-net:
+    driver: bridge

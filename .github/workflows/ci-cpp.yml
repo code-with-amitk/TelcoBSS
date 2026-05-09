@@ -1,0 +1,34 @@
+name: CI C++
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential librdkafka-dev libcouchbase-dev libssl-dev
+
+      - name: Configure CMake
+        working-directory: ./cmd/rating-engine
+        run: cmake -S . -B build
+
+      - name: Build rating engine
+        working-directory: ./cmd/rating-engine
+        run: cmake --build build --config Release
+
+      - name: Run basic smoke test
+        run: |
+          if [ -f ./cmd/rating-engine/build/rating-engine ]; then
+            echo "C++ build succeeded"
+          else
+            exit 1
+          fi
