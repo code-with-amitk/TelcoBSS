@@ -2,3 +2,88 @@
 :toclevels: 3
 
 == link:https://code-with-amitk.github.io/System_Design/Scalable/Mobile_Billing_System/#overall[Overall Flow Diagram]
+```puml
+@startuml
+
+actor "Customer Portal\nAdmin UI" as UI
+
+box Microservices
+participant "External\nAPIs" as API
+participant "Onboarding\nservice(Go)" as ONB
+participant "order\nservice(Go)" as ORD
+participant "billing\nservice(Go)" as BILL
+participant "Rating\nengine(C++)" as RATE
+participant "Admin\nservice(Go)-Optional" as ADMIN
+end box
+
+queue "Kafka Topics" as KAFKA
+
+box Databases
+database "Couchbase" as CB
+database "MySQL" as SQL
+end box
+
+box Observibility
+participant "Prometheus" as PROM
+participant "Grafana" as GF
+participant "Kibana" as KB
+end box
+
+participant "Elasticsearch" as ELK
+
+== Onboarding Flow ==
+
+UI -> ONB : POST /v1/customers\n(subscriber data)
+ONB -> CB : Store Subscriber (subscriber_id, name, dob, IMSI, MSISDN, status, etc.)
+ONB -> KAFKA : Produce CustomerOnboarded (customer_events)
+KAFKA -> BILL : Consume CustomerOnboarded
+BILL -> SQL : Initialize Billing Account (Subscription table)
+
+== Order Flow ==
+
+UI -> ORD : POST /v1/orders (order data)
+note over ORD
+Mapping of 
+subscriber to
+plan
+end note
+
+ORD -> SQL : Validate & Store Subscription(id, subscriber_id, plan_id, dates)
+ORD -> CB : Store Order Details (orders collection)
+ORD -> KAFKA : Produce OrderPlaced (order_events)
+KAFKA -> RATE : Consume OrderPlaced
+RATE -> RATE : Simulate Provisioning
+
+== Admin Flow (Optional) ==
+
+UI -> ADMIN : Manage Master Data\n(Plans, Products, Plan_to_Product)
+ADMIN -> SQL : Fill Plans, Products,\nPlan_to_Product tables
+
+== Data Usage Rating Flow ==
+
+API -> KAFKA : Inject Usage Events\n(usage_events)
+KAFKA -> RATE : Consume Usage Events
+RATE -> RATE : Apply Rating Logic\n(bytes * rate)
+RATE -> KAFKA : Produce Rated Events\n(rated_events)
+KAFKA -> BILL : Consume Rated Events
+BILL -> SQL : Create/Update Invoices\n(invoices, invoice_items)
+BILL -> CB : Store Invoice Metadata\n(usage_records)
+BILL -> KAFKA : Produce Billing Events\n(billing_events)
+
+== Billing Query ==
+
+UI -> BILL : GET /v1/invoices
+BILL -> SQL : Fetch Invoice Data
+BILL --> UI : Return Invoice
+
+== Observability ==
+
+ONB -> PROM : Send Metrics
+ORD -> PROM : Send Metrics
+BILL -> PROM : Send Metrics
+RATE -> PROM : Send Metrics
+PROM -> GF : Visualize Dashboards
+ELK -> KB : Index Logs
+
+@enduml
+```
