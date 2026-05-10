@@ -27,7 +27,10 @@ The platform is composed of Go services and a C++ rating engine.
 * Billing-service: retrieves invoices, stores billing transactions in MySQL, and consumes rated events for invoice generation.
 * Rating-engine (C++): consumes raw usage events from Kafka, applies rating logic, and produces rated usage events.
 
+link:docs/diagrams/Overall_Flow_Diagram.adoc[Overall Flow Diagram]
+
 link:docs/diagrams/deployment-architecture.mermaid[Deployment Architecture]
+
 link:docs/diagrams/event-driven-architecture.mermaid[Event Driven Architecture]
 
 == Services and Responsibilities
