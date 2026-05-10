@@ -5,9 +5,13 @@
 
 == Overview
 
-TelcoBSS is a monorepo scaffolding for a telco Business Support System platform. It demonstrates a modular architecture with Go microservices, a C++ rating engine, Kafka eventing, Couchbase and MySQL persistence, and observability via Prometheus/Grafana and Kibana.
+TelcoBSS is a monorepo for a telco Business Support System platform. It demonstrates a modular architecture with C++(Rating engine), Go microservices.
 
-The architecture is intentionally designed for local development and progressive implementation with working skeleton code for:
+* Distributed Messaging: Kafka
+* DB: Couchbase and MySQL
+* Observability: Prometheus/Grafana, Kibana.
+
+Present telco BSS is for:
 
 - customer onboarding
 - order management
